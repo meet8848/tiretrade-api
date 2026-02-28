@@ -22,7 +22,7 @@ from pathlib import Path
 from datetime import datetime
 from typing import Optional
 
-from fastapi import FastAPI, UploadFile, File, HTTPException, Query
+from fastapi import FastAPI, UploadFile, File, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
@@ -107,7 +107,14 @@ async def get_deals():
 
 
 @app.post("/api/deals")
-async def save_deals(deals: list[dict]):
+async def save_deals(request: Request):
+    """Save all deals. Body must be a JSON array of deal objects."""
+    try:
+        deals = await request.json()
+    except Exception:
+        raise HTTPException(400, "Invalid JSON body")
+    if not isinstance(deals, list):
+        raise HTTPException(400, "Body must be a JSON array")
     result = write_deals(deals)
     if not result["success"]:
         raise HTTPException(500, result.get("error", "Write failed"))
